@@ -1,0 +1,27 @@
+Catatan Dalam Pengerjaan Logic IoT
+-----
+25/11/2024
+Jadi yang udah di dapat
+- Function buat cek kartu
+- Fungtion buat Palang terbuka dan tertutup
+- Ngurangin saldo
+- cek parkir ada atau tidak
+
+// ALGORITMA PROGRAMNYA / LANGKAH PROGRAMNYA
+// Mobil di palang
+// Scan RFID --> data tersimpan --> palang terbuka
+// Mobil masuk pilih slot
+// Slot terdetect --> data tersimpan --> status terisi
+// Mobil akan keluar slot
+// Slot terdetect --> data tersimpan --> status kosong
+// Mobil akan keluar
+// Scan RIFD --> data tersimpan --> pintu terbuka
+// Selesai
+
+// IF sensor mendeteksi kendaraan THEN
+//     IF saldo >= tarif tetap THEN
+//         Kurangi saldo
+//         Buka pintu
+//     ELSE
+//         Tampilkan pesan error
+////////

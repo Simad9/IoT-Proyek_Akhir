@@ -1,0 +1,103 @@
+//* DHT 11 & ESP32 Web
+
+#include <DHT.h>;
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <HTTPClient.h>
+#include <Wire.h>
+
+// Konstanta
+#define DHTPIN 33         // Sesuaikan pin digital
+#define DHTTYPE DHT11     // DHT 11
+DHT dht(DHTPIN, DHTTYPE); // Inisialisasi sensor DHT untuk Arduino 16mhz normal
+
+const char *ssid = "lab IoT";
+const char *pass = "ifiot2202";
+
+const char *host = "192.168.2.204";
+
+int humid; // Menyimpan nilai kelembapan
+int temp;  // Menyimpan nilai suhu
+
+void setup()
+{
+  Serial.begin(115200);
+  connectWifi();
+  dht.begin();
+}
+
+void connectWifi()
+{
+  Serial.print("Connecting to WiFi");
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, pass);
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print("WiFi status: ");
+    Serial.println(WiFi.status());
+    delay(1000);
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
+  delay(2000);
+}
+
+void sendToDatabase(double temp, double humid)
+{
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    WiFiClient client;
+    HTTPClient http;
+
+    String address = "http://192.168.1.165/dht-web-server/kirimData.php?temp=";
+    address += String(temp);
+    address += "&humid=";
+    address += String(humid);
+
+    http.begin(client, address);
+    int httpCode = http.GET();
+    String payload;
+
+    if (httpCode > 0)
+    {
+      payload = http.getString();
+      payload.trim();
+      if (payload.length() > 0)
+      {
+        Serial.println(payload + "\n");
+      }
+    }
+
+    http.end();
+  }
+  else
+  {
+    Serial.print("Not connected to wifi ");
+    Serial.println(ssid);
+    connectWifi();
+  }
+}
+
+void loop()
+{
+  // Membaca data dan menyimpannya ke variabel humid (kelembaban) dan temp (suhu)
+  // Membaca suhu atau kelembapan membutuhkan waktu sekitar 250 milidetik
+  humid = dht.readHumidity();
+  temp = dht.readTemperature();
+
+  // Cetak nilai suhu dan kelembapan ke monitor serial
+  Serial.print("Humidity: ");
+  Serial.print(humid);
+  Serial.print(" %, Temp: ");
+  Serial.print(temp);
+  Serial.println(" ° Celsius");
+
+  sendToDatabase(temp, humid);
+
+  delay(30000); // Delay 30 detik.
+}
