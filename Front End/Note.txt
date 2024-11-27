@@ -1,0 +1,17 @@
+Slicing Desing
+Both : 
+- Login
+
+User : 
+- Index User
+
+Admin : 
+- Dashboard
+- Data
+
+27/11/2024
+- slicing login android dan web
+- slicing status android dan web
+--- Sisanya tinggal bagian admin ---
+- dashboard berhasil
+- data berhasil, cuman kalo datanya banyak masih belum bisa rapi
