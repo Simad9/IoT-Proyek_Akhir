@@ -15,3 +15,9 @@ Admin :
 --- Sisanya tinggal bagian admin ---
 - dashboard berhasil
 - data berhasil, cuman kalo datanya banyak masih belum bisa rapi
+
+30/11/2024
+- kurang bagian linechartnya, gimana ambil dari database, untuk tanggal itu
+---- Yang berhasil ----
+- Slot parkir auto reload
+- udah jadi php untuk ini
