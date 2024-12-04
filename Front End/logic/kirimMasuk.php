@@ -19,7 +19,17 @@ if ($id_kartu != "") {
     } else {
       echo "Gagal membaca data: " . mysqli_error($koneksi);
     }
-  }
+  }else {
+      // tambah user baru
+      tambahUserBaru($id_kartu);
+      // terbuka
+      $data = palangMasuk(getIdUser($id_kartu));
+      if ($data) {
+        echo "Berhasil mengirim data.";
+      } else {
+        echo "Gagal membaca data: " . mysqli_error($koneksi);
+      }
+    }
 } else {
   echo "Sensor Error";
 }
