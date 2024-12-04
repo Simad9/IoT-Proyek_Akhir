@@ -1,5 +1,6 @@
 <?php
 include 'koneksi.php';
+include 'function.php';
 
 $status = $_GET['status']; //status sensor : teriisi / kosong
 $id_slot = $_GET['id_slot']; // urutan slot parkirnya

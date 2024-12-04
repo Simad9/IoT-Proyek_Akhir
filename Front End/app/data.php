@@ -130,8 +130,8 @@ $hasil = mysqli_query($koneksi, $query);
                       <?= $i++; ?>
                     </th>
                     <td class="px-6 py-4"><?= $data['username']; ?></td>
-                    <td class="px-6 py-4"><?= $data['waktuMasuk']; ?></td>
-                    <td class="px-6 py-4"><?= $data['waktuKeluar']; ?></td>
+                    <td class="px-6 py-4"><?= date('d-m-Y H:i:s', strtotime($data['waktuMasuk'])); ?></td>
+                    <td class="px-6 py-4"><?= ($data['waktuKeluar'] != null) ? date('d-m-Y H:i:s', strtotime($data['waktuKeluar'])) : "Sedang Terparkir"  ; ?></td>
                   </tr>
                 <?php endwhile; ?>
              </tbody>

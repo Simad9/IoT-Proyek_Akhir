@@ -1,8 +1,10 @@
 <?php
 include 'koneksi.php';
+include 'function.php';
 
 $id_kartu = $_GET["id_kartu"]; // ambil id kartu, yang ada di kartu + sesuai dengan user di db
 $tarif = 5000;
+echo $id_kartu;
 
 if ($id_kartu != "") {
   // Cek kartu dan cek saldo kartu dari tabel user
