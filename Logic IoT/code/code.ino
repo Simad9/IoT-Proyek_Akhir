@@ -1,5 +1,8 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <HTTPClient.h>
 #include <LiquidCrystal_I2C.h>
 
 #include <SPI.h>
@@ -9,11 +12,18 @@
 //Deklarasi RFID
 #define RFID_RST 4
 
+//Variable Global
+int parkiranTersedia = 3;
+
+//Wifi
+const char *ssid = "iPhone";
+const char *pass = "1sampai8";
+const char *host = "192.168.1.88";
+
 //Deklarasi Umum Masuk
 String lastRFIDMasuk = "";
 String currentRFIDMasuk = "";
 bool isGateMasukOpen = false;
-int parkiranTersedia = 3;
 int infraredMasukStatus = 0;
 
 //Deklarasi Umum Keluar
@@ -22,6 +32,7 @@ String currentRFIDKeluar = "";
 bool isGateKeluarOpen = false;
 int infraredKeluarStatus = 0;
 
+// Deklarasi untuk RFID Masuk
 #define RFID_MASUK_SDA 2
 MFRC522 RFID_MASUK;
 
@@ -29,25 +40,117 @@ MFRC522 RFID_MASUK;
 #define INFRARED_MASUK 22
 
 // Deklarasi Untuk Servo Masuk
-#define SERVO_MASUK 23
-Servo pintuMasukServo; // Servo untuk pintu
+#define SERVO_MASUK                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+Servo pintuMasukServo;
 
 //Deklarasi Untuk LCD Masuk
-#define LCD_MASUK_SDA 33
-#define LCD_MASUK_SCL 32
-LiquidCrystal_I2C lcd(0x27, 16, 2);
-//LiquidCrystal_I2C lcd2(0x3F, 16, 2);
+LiquidCrystal_I2C lcdMasuk(0x23, 16, 2);
 
 // Deklarasi untuk RFID Keluar
 #define RFID_KELUAR_SDA 14
-MFRC522 RFID_KELUAR; // Instance untuk RFID Keluar
+MFRC522 RFID_KELUAR;
 
 // Deklarasi Untuk Infrared Keluar
 #define INFRARED_KELUAR 26
 
 // Deklarasi Untuk Servo Keluar
 #define SERVO_KELUAR 25
-Servo pintuKeluarServo; // Servo untuk pintu
+Servo pintuKeluarServo;
+
+//Deklarasi Untuk LCD Keluar
+#define LCD_KELUAR_SDA 21
+#define LCD_KELUAR_SCL 27
+LiquidCrystal_I2C lcdKeluar(0x27, 16, 2);
+
+void connectWifi()
+{
+  Serial.print("Connecting to WiFi");
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, pass);
+
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print("WiFi status: ");
+    Serial.println(WiFi.status());
+    delay(1000);
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
+  delay(2000);
+}
+
+void sendMasukID(String id)
+{
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    WiFiClient client;
+    HTTPClient http;
+
+    String address = "http://192.168.1.88/+project/iot-parkir/Front%20End/logic/kirimMasuk.php?id_kartu=";
+    address += id;
+
+    http.begin(client, address);
+    int httpCode = http.GET();
+    String payload;
+
+    if (httpCode > 0)
+    {
+      payload = http.getString();
+      payload.trim();
+      if (payload.length() > 0)
+      {
+        Serial.println(payload + "\n");
+      }
+    }
+
+    http.end();
+  }
+  else
+  {
+    Serial.print("Not connected to wifi ");
+    Serial.println(ssid);
+    connectWifi();
+  }
+}
+
+void sendKeluarID(String id)
+{
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    WiFiClient client;
+    HTTPClient http;
+
+    String address = "http://192.168.1.88/+project/iot-parkir/Front%20End/logic/kirimKeluar.php?id_kartu=";
+    address += id;
+
+    http.begin(client, address);
+    int httpCode = http.GET();
+    String payload;
+
+    if (httpCode > 0)
+    {
+      payload = http.getString();
+      payload.trim();
+      if (payload.length() > 0)
+      {
+        Serial.println(payload + "\n");
+      }
+    }
+
+    http.end();
+  }
+  else
+  {
+    Serial.print("Not connected to wifi ");
+    Serial.println(ssid);
+    connectWifi();
+  }
+}
 
 void taskPintuMasuk(void *pvParameters){
   while(true){
@@ -58,7 +161,6 @@ void taskPintuMasuk(void *pvParameters){
           for (byte i = 0; i < RFID_MASUK.uid.size; i++) {
             currentRFIDMasuk += String(RFID_MASUK.uid.uidByte[i], HEX);
           }
-
           if(currentRFIDMasuk.equalsIgnoreCase(lastRFIDMasuk)){
             Serial.println("Kartu telah di-tap sebelumnya!");
           }else{
@@ -67,9 +169,10 @@ void taskPintuMasuk(void *pvParameters){
             Serial.println(currentRFIDMasuk);
             lastRFIDMasuk = currentRFIDMasuk; // Simpan UID baru sebagai UID terakhir
             isGateMasukOpen = true;
-            // lcd.clear();
-            // lcd.setCursor(0, 0);
-            // lcd.print("Mobil Masuk");
+            //sendMasukID(lastRFIDMasuk);
+            // lcdMasuk.clear();
+            // lcdMasuk.setCursor(0, 0);
+            // lcdMasuk.print("Mobil Masuk");
             pintuMasukServo.write(90);
           }
           RFID_MASUK.PICC_HaltA();
@@ -97,11 +200,11 @@ void taskMobilLewatPintuMasuk(void *pvParameters){
           isGateMasukOpen = false;
           pintuMasukServo.write(0);
           parkiranTersedia--;
-          // lcd.clear();
-          // lcd.setCursor(0, 0);
-          // lcd.print("Sisa Slot :");
-          // lcd.setCursor(0, 1);
-          // lcd.print(parkiranTersedia);
+          // lcdMasuk.clear();
+          // lcdMasuk.setCursor(0, 0);
+          // lcdMasuk.print("Sisa Slot :");
+          // lcdMasuk.setCursor(0, 1);
+          // lcdMasuk.print(parkiranTersedia);
         }
       }
     }
@@ -128,6 +231,7 @@ void taskPintuKeluar(void *pvParameters){
             lastRFIDKeluar = currentRFIDKeluar; // Simpan UID baru sebagai UID terakhir
             isGateKeluarOpen = true;
             pintuKeluarServo.write(90);
+            //sendKeluarID(lastRFIDKeluar);
           }
           RFID_KELUAR.PICC_HaltA();
         }
@@ -162,24 +266,40 @@ void taskMobilLewatPintuKeluar(void *pvParameters){
 
 void setup(){
   Serial.begin(115200);
+  
+  // WiFi.mode(WIFI_STA);
+  // WiFi.begin(ssid, pass);
+
+  // while (WiFi.status() != WL_CONNECTED)
+  // {
+  //   Serial.print("WiFi status: ");
+  //   Serial.println(WiFi.status());
+  //   delay(1000);
+  // }
 
   //Inisialisasi RFID
   SPI.begin(5, 19, 18, 4); // SCK, MISO, MOSI
   RFID_MASUK.PCD_Init(RFID_MASUK_SDA, RFID_RST);   // Inisialisasi RFID Masuk
   RFID_KELUAR.PCD_Init(RFID_KELUAR_SDA, RFID_RST);  // Inisialisasi RFID Keluar
 
-  //Inisial LCD
-  Wire.begin(LCD_MASUK_SDA, LCD_MASUK_SCL);  // SDA di GPIO 14, SCL di GPIO 13
   // Inisialisasi LCD
-  lcd.begin();
-  lcd.backlight();      // Mengaktifkan lampu latar LCD
+  Wire.begin(LCD_KELUAR_SDA, LCD_KELUAR_SCL);
+  lcdMasuk.begin();
+  lcdMasuk.backlight();
+  lcdMasuk.clear();
+  lcdMasuk.setCursor(0, 0);
+  lcdMasuk.print("Sisa Slot :");
+  lcdMasuk.setCursor(0, 1);  // Set cursor di baris kedua
+  lcdMasuk.print(parkiranTersedia);
+  delay(2000);
 
-  // // Menampilkan pesan pada LCD
-  lcd.setCursor(0, 0);  // Set cursor di baris pertama, kolom pertama
-  lcd.print("Sisa Slot :");
-
-  lcd.setCursor(0, 1);  // Set cursor di baris kedua
-  lcd.print(parkiranTersedia);
+  lcdKeluar.begin();
+  lcdKeluar.backlight();
+  lcdKeluar.clear();
+  lcdKeluar.setCursor(0, 0);
+  lcdKeluar.print("Sisa Slot :");
+  lcdKeluar.setCursor(0, 1);
+  lcdKeluar.print(parkiranTersedia);
   delay(1000);
 
   //Inisialisasi Infrared
@@ -200,16 +320,38 @@ void setup(){
 
 void loop(){
   if(isGateMasukOpen){
-    lcd.setCursor(0, 0);  // Set cursor di baris pertama, kolom pertama
-    lcd.print("Masuk :");
-    lcd.setCursor(0, 1);  // Set cursor di baris kedua
-    lcd.print(currentRFIDMasuk);
+    lcdMasuk.clear();
+    lcdMasuk.setCursor(0, 0);  // Set cursor di baris pertama, kolom pertama
+    lcdMasuk.print("Masuk :");
+    lcdMasuk.setCursor(0, 1);  // Set cursor di baris kedua
+    lcdMasuk.print(currentRFIDMasuk);
   }else{
-    lcd.setCursor(0, 0);  // Set cursor di baris pertama, kolom pertama
-    lcd.print("Sisa Slot :");
+    lcdMasuk.clear();
+    lcdMasuk.setCursor(0, 0);  // Set cursor di baris pertama, kolom pertama
+    lcdMasuk.print("Sisa Slot :");
 
-    lcd.setCursor(0, 1);  // Set cursor di baris kedua
-    lcd.print(parkiranTersedia);
+    lcdMasuk.setCursor(0, 1);  // Set cursor di baris kedua
+    Serial.print("Parkir Tersedia: ");
+    lcdMasuk.print(parkiranTersedia);
   }
+
+  if(isGateKeluarOpen){
+    lcdKeluar.clear();
+    lcdKeluar.setCursor(0, 0);  // Set cursor di baris pertama, kolom pertama
+    lcdKeluar.print("Masuk :");
+    lcdKeluar.setCursor(0, 1);  // Set cursor di baris kedua
+    lcdKeluar.print(currentRFIDKeluar);
+  }else{
+    lcdKeluar.clear();
+    lcdKeluar.setCursor(0, 0);  // Set cursor di baris pertama, kolom pertama
+    lcdKeluar.print("Sisa Slot :");
+
+    lcdKeluar.setCursor(0, 1);  // Set cursor di baris kedua
+    lcdKeluar.print("Parkir Tersedia: ");
+    lcdKeluar.println(parkiranTersedia);
+    lcdKeluar.print(parkiranTersedia);
+  }
+
+
   delay(1000);
 }
