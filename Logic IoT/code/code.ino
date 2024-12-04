@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
 
 #include <SPI.h>
 #include <MFRC522.h>
@@ -11,6 +13,7 @@
 String lastRFIDMasuk = "";
 String currentRFIDMasuk = "";
 bool isGateMasukOpen = false;
+int parkiranTersedia = 3;
 int infraredMasukStatus = 0;
 
 //Deklarasi Umum Keluar
@@ -19,7 +22,6 @@ String currentRFIDKeluar = "";
 bool isGateKeluarOpen = false;
 int infraredKeluarStatus = 0;
 
-//Deklarasi RFID Masuk
 #define RFID_MASUK_SDA 2
 MFRC522 RFID_MASUK;
 
@@ -30,12 +32,18 @@ MFRC522 RFID_MASUK;
 #define SERVO_MASUK 23
 Servo pintuMasukServo; // Servo untuk pintu
 
+//Deklarasi Untuk LCD Masuk
+#define LCD_MASUK_SDA 33
+#define LCD_MASUK_SCL 32
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+//LiquidCrystal_I2C lcd2(0x3F, 16, 2);
+
 // Deklarasi untuk RFID Keluar
 #define RFID_KELUAR_SDA 14
 MFRC522 RFID_KELUAR; // Instance untuk RFID Keluar
 
 // Deklarasi Untuk Infrared Keluar
-#define INFRARED_KELUAR 32
+#define INFRARED_KELUAR 26
 
 // Deklarasi Untuk Servo Keluar
 #define SERVO_KELUAR 25
@@ -59,6 +67,9 @@ void taskPintuMasuk(void *pvParameters){
             Serial.println(currentRFIDMasuk);
             lastRFIDMasuk = currentRFIDMasuk; // Simpan UID baru sebagai UID terakhir
             isGateMasukOpen = true;
+            // lcd.clear();
+            // lcd.setCursor(0, 0);
+            // lcd.print("Mobil Masuk");
             pintuMasukServo.write(90);
           }
           RFID_MASUK.PICC_HaltA();
@@ -85,6 +96,12 @@ void taskMobilLewatPintuMasuk(void *pvParameters){
           infraredMasukStatus = 0;
           isGateMasukOpen = false;
           pintuMasukServo.write(0);
+          parkiranTersedia--;
+          // lcd.clear();
+          // lcd.setCursor(0, 0);
+          // lcd.print("Sisa Slot :");
+          // lcd.setCursor(0, 1);
+          // lcd.print(parkiranTersedia);
         }
       }
     }
@@ -144,12 +161,26 @@ void taskMobilLewatPintuKeluar(void *pvParameters){
 }
 
 void setup(){
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   //Inisialisasi RFID
-  SPI.begin(5, 19, 18, 4); // Init SPI bus dengan pin manual
+  SPI.begin(5, 19, 18, 4); // SCK, MISO, MOSI
   RFID_MASUK.PCD_Init(RFID_MASUK_SDA, RFID_RST);   // Inisialisasi RFID Masuk
   RFID_KELUAR.PCD_Init(RFID_KELUAR_SDA, RFID_RST);  // Inisialisasi RFID Keluar
+
+  //Inisial LCD
+  Wire.begin(LCD_MASUK_SDA, LCD_MASUK_SCL);  // SDA di GPIO 14, SCL di GPIO 13
+  // Inisialisasi LCD
+  lcd.begin();
+  lcd.backlight();      // Mengaktifkan lampu latar LCD
+
+  // // Menampilkan pesan pada LCD
+  lcd.setCursor(0, 0);  // Set cursor di baris pertama, kolom pertama
+  lcd.print("Sisa Slot :");
+
+  lcd.setCursor(0, 1);  // Set cursor di baris kedua
+  lcd.print(parkiranTersedia);
+  delay(1000);
 
   //Inisialisasi Infrared
   pinMode(INFRARED_MASUK, INPUT);
@@ -168,5 +199,17 @@ void setup(){
 }
 
 void loop(){
+  if(isGateMasukOpen){
+    lcd.setCursor(0, 0);  // Set cursor di baris pertama, kolom pertama
+    lcd.print("Masuk :");
+    lcd.setCursor(0, 1);  // Set cursor di baris kedua
+    lcd.print(currentRFIDMasuk);
+  }else{
+    lcd.setCursor(0, 0);  // Set cursor di baris pertama, kolom pertama
+    lcd.print("Sisa Slot :");
+
+    lcd.setCursor(0, 1);  // Set cursor di baris kedua
+    lcd.print(parkiranTersedia);
+  }
   delay(1000);
 }

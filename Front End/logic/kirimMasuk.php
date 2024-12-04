@@ -8,7 +8,7 @@ if ($id_kartu != "") {
   // Cek kartu dan cek saldo kartu dari tabel user
   if (cekKartu($id_kartu) && cekSaldo($id_kartu) >= $tarif) {
     // Jika sensor mendeteksi kendaraan
-    $data = palangMasuk(getIdUser($id_kartu));
+    $data = palangMasuk(getIdUser(id_kartu: $id_kartu));
     // $data = mysqli_query(
     //   $koneksi,
     //   "INSERT INTO sistem VALUES ('', '5000', NOW(), NULL, '$id_kartu')"
