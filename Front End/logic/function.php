@@ -99,3 +99,11 @@ function updateSlotParkirKeluar($slot)
   echo "Data diupdate - NULL \n";
   return $result;
 }
+
+function tambahUserBaru($id_kartu){
+  global $conn;
+  $query = "INSERT INTO user VALUES ('', 'user', 'user', '10000' , '$id_kartu')";
+  $result = mysqli_query($conn, $query);
+  return $result;
+}
+
